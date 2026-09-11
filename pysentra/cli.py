@@ -16,7 +16,7 @@ from pysentra.scanner.runner import is_url, run_scan
 try:
     __version__ = importlib.metadata.version("pysentra")
 except Exception:
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
 
 VALID_MODULES = ("auth", "authz", "input", "api", "client", "tls", "storage")
 

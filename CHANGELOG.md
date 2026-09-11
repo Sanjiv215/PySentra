@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-11
+
+### Fixed
+- Fixed a bug where scan results returned identical false findings across different target URLs (root causes: unconditional static informational placeholder findings and a missing `Set-Cookie` presence check that caused cookie attribute checks to falsely flag cookie-less targets with blank evidence snippets).
+- Attached actual target response headers and body snippets to HSTS, CORS, and cookie findings.
+- Added browser User-Agent header to requests to avoid generic WAF/CDN 403 blocks on scanned targets.
+- Added automated regression tests verifying findings differ correctly between distinct targets with different security postures.
+
 ## [1.1.0] - 2026-09-11
 
 ### Added
