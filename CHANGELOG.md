@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-11
+
+### Security & Accuracy
+- **Strict Runtime Evidence Enforcement**: Added validation guards in `Finding` dataclass preventing the instantiation of findings lacking genuine response evidence or matching phantom placeholder titles.
+- **Eliminated All Phantom Findings**: Completely removed static informational placeholder findings from all scanning modules.
+- **Enhanced Verification**: Added automated unit tests enforcing that invalid/evidence-less findings raise runtime exceptions.
+
 ## [1.2.0] - 2026-09-11
 
 ### Fixed
