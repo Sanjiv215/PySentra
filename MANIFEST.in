@@ -1,0 +1,6 @@
+include README.md LICENSE CONTRIBUTING.md CHANGELOG.md
+recursive-include pysentra/dashboard/templates *.html
+recursive-include pysentra/dashboard/static *
+recursive-include pysentra/report/templates *.j2
+recursive-include demo-vulnerable-app *.py *.txt *.js
+recursive-include docs *.svg
