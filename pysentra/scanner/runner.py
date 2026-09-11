@@ -1,4 +1,4 @@
-"""Scanner runner and orchestration."""
+"""Scanner runner and orchestration for web applications and local codebases."""
 
 import time
 from datetime import datetime, timezone
@@ -16,6 +16,7 @@ from . import (
     auth_checks,
     authz_checks,
     client_side_checks,
+    code_checks,
     cors_checks,
     input_checks,
     storage_privacy_checks,
@@ -77,25 +78,44 @@ class ScanContext:
             return FailedResponse(str(e))
 
 
+def is_url(target: str) -> bool:
+    """Check if the target string is a web URL."""
+    return target.startswith("http://") or target.startswith("https://")
+
+
 def run_scan(
     target: str,
     selected: Sequence[str],
-    rate_limit: float,
+    rate_limit: float = 5.0,
     test_app: bool = False,
     auth_token: Optional[str] = None,
     second_auth_token: Optional[str] = None,
     progress: Callable[[str], None] = lambda _: None,
 ) -> Tuple[List[Finding], Path, Dict[str, Any]]:
-    """Execute selected security modules against target, write reports, and return findings."""
-    ctx = ScanContext(target, rate_limit, test_app, auth_token, second_auth_token)
+    """Execute selected security modules against target (web URL or local folder)."""
+    audit_entries: List[Dict[str, Any]] = []
     findings: List[Finding] = []
-    for name in selected:
-        if name in MODULES:
-            progress(name)
-            findings.extend(MODULES[name].run(ctx))
-    if "api" in selected or "client" in selected:
-        findings.extend(cors_checks.run(ctx))
+
+    if is_url(target):
+        ctx = ScanContext(target, rate_limit, test_app, auth_token, second_auth_token)
+        for name in selected:
+            if name in MODULES:
+                progress(name)
+                findings.extend(MODULES[name].run(ctx))
+        if "api" in selected or "client" in selected:
+            findings.extend(cors_checks.run(ctx))
+        audit_entries = ctx.audit.entries
+    else:
+        # Universal local code scan mode
+        findings = code_checks.run_local_scan(target, progress=progress)
+        audit_entries = [{
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "method": "STATIC_CODE_SCAN",
+            "url": str(Path(target).resolve()),
+            "module": "code_checks",
+        }]
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    report_dir = Path("pysentra-reports") / timestamp
-    data = write_report(report_dir, target, findings, ctx.audit.entries)
+    report_dir = Path.cwd() / "pysentra-reports" / timestamp
+    data = write_report(report_dir, target, findings, audit_entries)
     return findings, report_dir, data

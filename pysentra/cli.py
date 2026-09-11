@@ -3,28 +3,35 @@
 import argparse
 import urllib.parse
 import webbrowser
+from pathlib import Path
 from typing import List, Optional
 
 from rich.console import Console
 from rich.progress import Progress
 
 from pysentra.dashboard.server import serve
-from pysentra.scanner.runner import run_scan
+from pysentra.scanner.runner import is_url, run_scan
 
 VALID_MODULES = ("auth", "authz", "input", "api", "client", "tls", "storage")
 
 
-def validate_url(url_str: str) -> str:
-    """Validate that target URL is a well-formed http or https URL."""
-    try:
-        parsed = urllib.parse.urlparse(url_str)
-        if parsed.scheme not in ("http", "https") or not parsed.netloc:
-            raise ValueError
-        return url_str
-    except Exception:
+def validate_target(target_str: Optional[str]) -> str:
+    """Validate that target is either a well-formed URL or an existing local path."""
+    if not target_str or target_str == ".":
+        return "."
+    if target_str.startswith("http://") or target_str.startswith("https://"):
+        parsed = urllib.parse.urlparse(target_str)
+        if parsed.scheme in ("http", "https") and parsed.netloc:
+            return target_str
         raise argparse.ArgumentTypeError(
-            f"Invalid target URL '{url_str}'. Target must be a well-formed URL starting with 'http://' or 'https://'."
+            f"Invalid target URL '{target_str}'. Target must be a well-formed URL starting with 'http://' or 'https://'."
         )
+    path = Path(target_str)
+    if not path.exists():
+        raise argparse.ArgumentTypeError(
+            f"Invalid target '{target_str}'. Path does not exist on filesystem."
+        )
+    return str(path)
 
 
 def validate_rate_limit(value_str: str) -> float:
@@ -57,11 +64,17 @@ def main(argv: Optional[List[str]] = None) -> None:
     """Entry point for pysentra CLI."""
     parser = argparse.ArgumentParser(
         prog="pysentra",
-        description="Authorized local-first web application security scanner",
+        description="Authorized local-first web application & universal code security scanner",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-    scan_parser = subparsers.add_parser("scan", help="Scan a target URL for security vulnerabilities")
-    scan_parser.add_argument("url", type=validate_url, help="Target URL (e.g. http://localhost:5000)")
+    scan_parser = subparsers.add_parser("scan", help="Scan a target URL or local folder for security vulnerabilities")
+    scan_parser.add_argument(
+        "target",
+        nargs="?",
+        default=".",
+        type=validate_target,
+        help="Target URL (e.g. http://localhost:5000) or local folder path (default: .)",
+    )
     scan_parser.add_argument(
         "--i-am-authorized",
         action="store_true",
@@ -75,7 +88,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     scan_parser.add_argument(
         "--modules",
         default=",".join(VALID_MODULES),
-        help=f"Comma-separated list of check modules to run (default: {','.join(VALID_MODULES)})",
+        help=f"Comma-separated list of check modules to run for web target (default: {','.join(VALID_MODULES)})",
     )
     scan_parser.add_argument("--auth-token", help="First test token for read-only authorization checks")
     scan_parser.add_argument(
@@ -86,7 +99,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "--rate-limit",
         type=validate_rate_limit,
         default=5.0,
-        help="Maximum requests per second (default: 5)",
+        help="Maximum requests per second for web scans (default: 5)",
     )
     scan_parser.add_argument(
         "--bind",
@@ -111,11 +124,17 @@ def main(argv: Optional[List[str]] = None) -> None:
     )
 
     args = parser.parse_args(argv)
+    target_is_url = is_url(args.target)
 
     if not args.i_am_authorized:
+        prompt_text = (
+            "Confirm you are authorized to scan this target [y/N]: "
+            if target_is_url
+            else "Confirm you are authorized to assess this local codebase [y/N]: "
+        )
         try:
             confirmed = (
-                input("Confirm you are authorized to scan this target [y/N]: ")
+                input(prompt_text)
                 .strip()
                 .lower()
                 in ("y", "yes")
@@ -133,19 +152,24 @@ def main(argv: Optional[List[str]] = None) -> None:
         parser.error("no scan modules selected")
 
     console = Console()
-    console.print(
-        f"[bold cyan]pysentra[/] scanning {args.url} at no more than {args.rate_limit} requests/sec"
-    )
+    if target_is_url:
+        console.print(
+            f"[bold cyan]pysentra[/] scanning web URL {args.target} at no more than {args.rate_limit} requests/sec"
+        )
+    else:
+        resolved_path = str(Path(args.target).resolve())
+        console.print(f"[bold cyan]pysentra[/] scanning local path: {resolved_path}")
 
     with Progress() as progress:
-        task = progress.add_task("Running checks", total=len(selected))
+        task = progress.add_task("Running checks", total=None if not target_is_url else len(selected))
 
         def update_progress(name: str) -> None:
             console.print(f"  [yellow]→[/] {name}")
-            progress.advance(task)
+            if target_is_url:
+                progress.advance(task)
 
         findings, directory, _ = run_scan(
-            args.url,
+            args.target,
             selected,
             args.rate_limit,
             args.target_is_test_app,

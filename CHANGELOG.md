@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-11
+
+### Added
+- **Universal Local Code Scanning (`pysentra scan <path>` / `pysentra scan .`)**:
+  - Language-agnostic static analysis without requiring compilers or interpreters.
+  - Secret & credential detection across all source files (AWS keys, GCP keys, Stripe keys, private keys, database URIs, API tokens).
+  - Dependency vulnerability scanning via the free OSV.dev database across Python (`requirements.txt`), Node (`package.json`), Go (`go.mod`), Ruby (`Gemfile.lock`), and PHP (`composer.json`).
+  - Insecure configuration checks (debug mode in code, wildcard CORS, disabled TLS verification).
+  - Exposed sensitive file detection (`.env`, private SSH keys, `.pem`/`.key`, database dump files).
+  - Static injection risk analysis for Python, JS/TS, PHP, and SQL string concatenation.
+- **Zero-Login Single-User Dashboard**:
+  - Confirmed all dashboard routes (`/`, `/api/findings`, `/download/json`, `/download/html`) serve immediately without login forms, tokens, or redirects.
+  - Robust cross-platform package resource resolution via `importlib.resources`.
+  - CWD-relative report generation under `pysentra-reports/`.
+
+### Changed
+- CLI `scan` command accepts both web URLs (`http://...`, `https://...`) and local filesystem paths (defaulting to current directory `.`).
+
 ## [1.0.0] - 2026-09-11
 
 ### Added

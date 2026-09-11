@@ -1,10 +1,18 @@
 """Local findings dashboard web application."""
 
+import importlib.resources as pkg_resources
 import json
 from pathlib import Path
 from typing import Any, Dict, Union
 
 from flask import Flask, jsonify, render_template, send_from_directory
+
+try:
+    _templates_dir = str(pkg_resources.files("pysentra.dashboard").joinpath("templates"))
+    _static_dir = str(pkg_resources.files("pysentra.dashboard").joinpath("static"))
+except Exception:
+    _templates_dir = str(Path(__file__).parent / "templates")
+    _static_dir = str(Path(__file__).parent / "static")
 
 
 def create_app(report_dir: Union[Path, str]) -> Flask:
@@ -15,7 +23,11 @@ def create_app(report_dir: Union[Path, str]) -> Flask:
     if report_file.is_file():
         data = json.loads(report_file.read_text(encoding="utf-8"))
 
-    app = Flask(__name__)
+    app = Flask(
+        "pysentra.dashboard",
+        template_folder=_templates_dir,
+        static_folder=_static_dir,
+    )
 
     @app.get("/")
     def index() -> str:

@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysentra"
-version = "1.0.0"
-description = "Local-first, authorized-use web app security scanner with a live vulnerability dashboard"
+version = "1.1.0"
+description = "Local-first, authorized-use web app & universal code security scanner with a live vulnerability dashboard"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache-2.0" }
 authors = [{name = "Sanjiv Prasad", email = "sanjivprasad360@gmail.com"}]
-keywords = ["security", "vulnerability-scanner", "pentest", "owasp", "web-security", "dashboard"]
+keywords = ["security", "vulnerability-scanner", "static-analysis", "secrets-detection", "sast", "dast", "pentest", "owasp", "web-security", "dashboard"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",

@@ -2,22 +2,24 @@
 
 import pytest
 
-from pysentra.cli import validate_port, validate_rate_limit, validate_url
+from pysentra.cli import validate_port, validate_rate_limit, validate_target
 from pysentra.dashboard.server import serve
 
 
-def test_validate_url_valid():
-    assert validate_url("http://localhost:5000") == "http://localhost:5000"
-    assert validate_url("https://example.com/app") == "https://example.com/app"
+def test_validate_target_url():
+    assert validate_target("http://localhost:5000") == "http://localhost:5000"
+    assert validate_target("https://example.com/app") == "https://example.com/app"
+    with pytest.raises(Exception):
+        validate_target("ftp://example.com")
+    with pytest.raises(Exception):
+        validate_target("http://")
 
 
-def test_validate_url_invalid():
+def test_validate_target_local_path(tmp_path):
+    assert validate_target(".") == "."
+    assert validate_target(str(tmp_path)) == str(tmp_path)
     with pytest.raises(Exception):
-        validate_url("not-a-url")
-    with pytest.raises(Exception):
-        validate_url("ftp://example.com")
-    with pytest.raises(Exception):
-        validate_url("http://")
+        validate_target("/nonexistent/path/that/does/not/exist")
 
 
 def test_validate_rate_limit():
