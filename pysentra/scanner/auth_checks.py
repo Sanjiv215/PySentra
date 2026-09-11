@@ -45,17 +45,4 @@ def run(ctx: ContextProtocol) -> List[Finding]:
                         "Use a server-validated CSRF token and SameSite cookies.",
                     )
                 )
-            if not any(indicator in form.lower() for indicator in ("mfa", "2fa", "two-factor", "authenticator", "otp")):
-                out.append(
-                    finding(
-                        "Authentication & Session Management",
-                        "MFA presence requires verification",
-                        "No MFA indicator was discovered during passive inspection of the login page.",
-                        "/login",
-                        "Info",
-                        "GET /login HTTP/1.1",
-                        form[:500],
-                        remediation="Offer MFA and require it for privileged accounts.",
-                    )
-                )
     return out

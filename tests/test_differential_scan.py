@@ -177,3 +177,61 @@ def test_differential_scan_reflects_actual_target_differences(monkeypatch, tmp_p
 
     env_finding = next(f for f in findings_vulnerable if f.title == "Environment file exposed over HTTP")
     assert "DATABASE_URL" in env_finding.poc_response_snippet
+
+
+def test_finding_enforces_raw_evidence_and_rejects_phantom_titles():
+    import pytest
+
+    from pysentra.report.models import Finding
+
+    # 1. Banned phantom title must raise ValueError
+    with pytest.raises(ValueError, match="Prohibited phantom finding"):
+        Finding(
+            title="Account lockout not tested",
+            scope_area="Authentication & Session Management",
+            description="Fake desc",
+            affected_component="/login",
+            severity="Info",
+            cvss_score=0.0,
+            cvss_vector="CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:N/A:N",
+            steps_to_reproduce=[],
+            poc_request="",
+            poc_response_snippet="fake evidence",
+            business_impact="",
+            remediation="",
+        )
+
+    # 2. Empty evidence must raise ValueError
+    with pytest.raises(ValueError, match="without literal evidence"):
+        Finding(
+            title="Content Security Policy missing",
+            scope_area="Client-Side Security Controls",
+            description="Fake desc",
+            affected_component="/",
+            severity="Medium",
+            cvss_score=5.0,
+            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+            steps_to_reproduce=[],
+            poc_request="GET / HTTP/1.1",
+            poc_response_snippet="",
+            business_impact="",
+            remediation="",
+        )
+
+    # 3. Session cookie check without cookie content must raise ValueError
+    with pytest.raises(ValueError, match="requires literal Set-Cookie header data"):
+        Finding(
+            title="Session cookie missing security attributes",
+            scope_area="Authentication & Session Management",
+            description="Fake desc",
+            affected_component="/",
+            severity="Medium",
+            cvss_score=5.0,
+            cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N",
+            steps_to_reproduce=[],
+            poc_request="GET / HTTP/1.1",
+            poc_response_snippet="no cookie here",
+            business_impact="",
+            remediation="",
+        )
+
