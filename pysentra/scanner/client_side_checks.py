@@ -52,7 +52,7 @@ def run(ctx: ContextProtocol) -> List[Finding]:
                 "/static/app.js",
                 "High",
                 "GET /static/app.js HTTP/1.1",
-                js_text,
+                js_text[:500],
                 "Remove secrets from client bundles; rotate exposed credentials and use server-side storage.",
             )
         )

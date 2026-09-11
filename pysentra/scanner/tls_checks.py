@@ -18,14 +18,15 @@ def run(ctx: ContextProtocol) -> List[Finding]:
                 "The supplied target URL is HTTP and does not protect traffic in transit.",
                 ctx.target,
                 "High",
-                "GET / HTTP/1.1",
+                f"GET {ctx.target}/ HTTP/1.1",
+                "Protocol: http:// (unencrypted plaintext transport)",
                 remediation="Serve the application exclusively over HTTPS and redirect HTTP to HTTPS; enable HSTS.",
             )
         )
     else:
         r = ctx.request("GET", ctx.target, "tls")
         headers = getattr(r, "headers", {})
-        if not headers.get("Strict-Transport-Security"):
+        if getattr(r, "status_code", 0) > 0 and not headers.get("Strict-Transport-Security"):
             out.append(
                 finding(
                     "Secure Communication Mechanisms",
@@ -33,6 +34,8 @@ def run(ctx: ContextProtocol) -> List[Finding]:
                     "HTTPS target did not return Strict-Transport-Security.",
                     "/",
                     "Medium",
+                    f"GET {ctx.target} HTTP/1.1",
+                    str(dict(headers)),
                     remediation="Enable HSTS after HTTPS is fully deployed.",
                 )
             )

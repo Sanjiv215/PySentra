@@ -18,7 +18,7 @@ def run(ctx: ContextProtocol) -> List[Finding]:
     h = getattr(r, "headers", {})
     origin = h.get("Access-Control-Allow-Origin", "")
     creds = h.get("Access-Control-Allow-Credentials", "").lower()
-    if origin == "https://pysentra.invalid" and creds == "true":
+    if getattr(r, "status_code", 0) in (200, 201, 204) and origin == "https://pysentra.invalid" and creds == "true":
         return [
             finding(
                 "API Security",

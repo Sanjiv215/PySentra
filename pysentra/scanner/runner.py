@@ -64,6 +64,12 @@ class ScanContext:
         self.second_auth_token = second_auth_token
         self.audit = AuditLogger()
         self.session = requests.Session()
+        ua = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 "
+            "(PySentra Security Scanner)"
+        )
+        self.session.headers.update({"User-Agent": ua})
 
     def request(self, method: str, url: str, module: str, **kwargs: Any) -> Any:
         """Issue a rate-limited and logged HTTP request."""

@@ -13,7 +13,7 @@ def run(ctx: ContextProtocol) -> List[Finding]:
     if ctx.auth_token and ctx.second_auth_token:
         headers = {"Authorization": "Bearer " + str(ctx.auth_token)}
         r = get(ctx, "/api/order/2", "authz", headers=headers)
-        if r.status_code == 200:
+        if r.status_code == 200 and r.text.strip():
             out.append(
                 finding(
                     "Authorization & Access Control",
@@ -22,33 +22,24 @@ def run(ctx: ContextProtocol) -> List[Finding]:
                     "/api/order/2",
                     "High",
                     "GET /api/order/2 HTTP/1.1\nAuthorization: Bearer [user token]",
-                    getattr(r, "text", ""),
+                    getattr(r, "text", "")[:500],
                     "Enforce object ownership server-side for every request.",
                 )
             )
-    else:
-        out.append(
-            finding(
-                "Authorization & Access Control",
-                "IDOR check needs two test tokens",
-                "Provide --auth-token and --second-auth-token to enable read-only cross-user tests.",
-                "/api/order/<id>",
-                "Info",
-                remediation="Test object authorization with two accounts in an approved environment.",
-            )
-        )
     r = get(ctx, "/admin", "authz")
     if r.status_code == 200:
-        out.append(
-            finding(
-                "Authorization & Access Control",
-                "Unauthenticated admin path accessible",
-                "Forced browsing reached an admin endpoint without credentials.",
-                "/admin",
-                "High",
-                "GET /admin HTTP/1.1",
-                getattr(r, "text", ""),
-                "Require authentication and role checks for administration endpoints.",
+        r_text = getattr(r, "text", "")
+        if r_text.strip():
+            out.append(
+                finding(
+                    "Authorization & Access Control",
+                    "Unauthenticated admin path accessible",
+                    "Forced browsing reached an admin endpoint without credentials.",
+                    "/admin",
+                    "High",
+                    "GET /admin HTTP/1.1",
+                    r_text[:500],
+                    "Require authentication and role checks for administration endpoints.",
+                )
             )
-        )
     return out

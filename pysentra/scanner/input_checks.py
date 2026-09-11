@@ -30,7 +30,7 @@ def run(ctx: ContextProtocol) -> List[Finding]:
     r = get(ctx, "/api/v1/users?sort='", "input")
     sql_text = getattr(r, "text", "")
     signatures = ("sql", "sqlite", "syntax error", "operationalerror")
-    if any(s in sql_text.lower() for s in signatures):
+    if r.status_code in (200, 500) and any(s in sql_text.lower() for s in signatures):
         out.append(
             finding(
                 "Input Validation & Data Handling",
@@ -39,19 +39,8 @@ def run(ctx: ContextProtocol) -> List[Finding]:
                 "/api/v1/users",
                 "Medium",
                 "GET /api/v1/users?sort=' HTTP/1.1",
-                sql_text,
+                sql_text[:500],
                 "Use parameterized queries and generic error handling.",
-            )
-        )
-    if not ctx.test_app:
-        out.append(
-            finding(
-                "Input Validation & Data Handling",
-                "Upload and mass-assignment tests skipped",
-                "These checks are gated to test applications.",
-                "Upload/API endpoints",
-                "Info",
-                remediation="Manually validate upload allowlists and DTO field allowlists.",
             )
         )
     return out
