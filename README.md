@@ -83,6 +83,19 @@ The dashboard provides severity cards, a findings chart, interactive filters, ex
 2. **Web Application Scanner (`scanner/`)**: Rate-limited, audited assessment covering Auth, AuthZ, Input Validation, API Security, Client-Side Controls, TLS/HSTS, Storage & Privacy, and CORS.
 3. **Dashboard & Reporting (`dashboard/`, `report/`)**: Zero-login local web UI and JSON/HTML report generation.
 
+## Troubleshooting
+
+### "pip install --upgrade pysentra" doesn't show the latest version
+
+Right after a new release, PyPI's CDN can take a minute or two to propagate, and pip may also be using a locally cached index response. If `pysentra --version` doesn't show the version you expect:
+
+```sh
+pip install --no-cache-dir --upgrade pysentra
+```
+
+This is expected shortly after a release and is not a bug — retry normally once a minute or two has passed.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Do not add checks that could be destructive, credential-brute-force targets, or bypass safeguards.
+

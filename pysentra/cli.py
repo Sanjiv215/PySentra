@@ -1,6 +1,7 @@
 """Command line interface for pysentra."""
 
 import argparse
+import importlib.metadata
 import urllib.parse
 import webbrowser
 from pathlib import Path
@@ -11,6 +12,11 @@ from rich.progress import Progress
 
 from pysentra.dashboard.server import serve
 from pysentra.scanner.runner import is_url, run_scan
+
+try:
+    __version__ = importlib.metadata.version("pysentra")
+except Exception:
+    __version__ = "1.1.0"
 
 VALID_MODULES = ("auth", "authz", "input", "api", "client", "tls", "storage")
 
@@ -65,6 +71,12 @@ def main(argv: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog="pysentra",
         description="Authorized local-first web application & universal code security scanner",
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     scan_parser = subparsers.add_parser("scan", help="Scan a target URL or local folder for security vulnerabilities")

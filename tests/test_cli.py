@@ -54,3 +54,11 @@ def test_serve_default_host_is_loopback(monkeypatch, tmp_path):
     monkeypatch.setattr("pysentra.dashboard.server.create_app", lambda _dir: DummyApp())
     serve(tmp_path, 8765)
     assert bound_hosts == ["127.0.0.1"]
+
+def test_version_flag(capsys):
+    from pysentra.cli import main
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+    assert exc.value.code == 0
+    captured = capsys.readouterr()
+    assert "pysentra" in captured.out or "pysentra" in captured.err
