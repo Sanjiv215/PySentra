@@ -1,2 +1,10 @@
 """pysentra: authorization-gated local web security scanner."""
-__version__ = "0.1.0"
+
+import importlib.metadata
+
+try:
+    __version__ = importlib.metadata.version("pysentra")
+except Exception:
+    __version__ = "1.0.0"
+
+__all__ = ["__version__"]

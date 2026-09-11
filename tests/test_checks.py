@@ -1,4 +1,5 @@
 """Offline tests: every scanner request is served by the bundled Flask app."""
+
 import importlib.util
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -6,13 +7,24 @@ from urllib.parse import urlsplit
 import requests
 from requests.structures import CaseInsensitiveDict
 
-from pysentra.scanner import api_checks, auth_checks, authz_checks, client_side_checks, cors_checks, input_checks, storage_privacy_checks, tls_checks
+from pysentra.scanner import (
+    api_checks,
+    auth_checks,
+    authz_checks,
+    client_side_checks,
+    cors_checks,
+    input_checks,
+    storage_privacy_checks,
+    tls_checks,
+)
 from pysentra.scanner.runner import run_scan
 
 
 def demo_app():
     path = Path(__file__).parents[1] / "demo-vulnerable-app" / "app.py"
     spec = importlib.util.spec_from_file_location("pysentra_demo_for_tests", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Failed to load demo-vulnerable-app module")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.app
@@ -88,13 +100,21 @@ def test_full_scan_against_in_process_demo(monkeypatch, tmp_path):
     monkeypatch.setattr(requests.Session, "request", local_request)
     monkeypatch.chdir(tmp_path)
     findings, report_dir, report = run_scan(
-        "http://demo.local", ["auth", "authz", "input", "api", "client", "tls", "storage"],
-        10000, True, None, None,
+        "http://demo.local",
+        ["auth", "authz", "input", "api", "client", "tls", "storage"],
+        10000,
+        True,
+        None,
+        None,
     )
     expected = {
-        "Authentication & Session Management", "Authorization & Access Control",
-        "Input Validation & Data Handling", "API Security", "Client-Side Security Controls",
-        "Secure Communication Mechanisms", "Data Storage & Privacy Protections",
+        "Authentication & Session Management",
+        "Authorization & Access Control",
+        "Input Validation & Data Handling",
+        "API Security",
+        "Client-Side Security Controls",
+        "Secure Communication Mechanisms",
+        "Data Storage & Privacy Protections",
     }
     assert expected <= {item.scope_area for item in findings}
     assert (report_dir / "report.json").is_file()

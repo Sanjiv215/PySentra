@@ -1,4 +1,5 @@
-include README.md LICENSE CONTRIBUTING.md CHANGELOG.md
+include README.md LICENSE NOTICE SECURITY.md CODE_OF_CONDUCT.md CONTRIBUTING.md CHANGELOG.md
+include pysentra/py.typed
 recursive-include pysentra/dashboard/templates *.html
 recursive-include pysentra/dashboard/static *
 recursive-include pysentra/report/templates *.j2

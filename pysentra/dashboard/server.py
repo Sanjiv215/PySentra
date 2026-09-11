@@ -1,16 +1,42 @@
-from flask import Flask, jsonify, render_template, send_from_directory
+"""Local findings dashboard web application."""
+
+import json
 from pathlib import Path
-def create_app(report_dir):
-    import json
-    report_dir=Path(report_dir); data=json.loads((report_dir/"report.json").read_text())
-    app=Flask(__name__)
+from typing import Any, Dict, Union
+
+from flask import Flask, jsonify, render_template, send_from_directory
+
+
+def create_app(report_dir: Union[Path, str]) -> Flask:
+    """Create a Flask application for displaying scan results."""
+    resolved_dir = Path(report_dir).resolve()
+    report_file = resolved_dir / "report.json"
+    data: Dict[str, Any] = {}
+    if report_file.is_file():
+        data = json.loads(report_file.read_text(encoding="utf-8"))
+
+    app = Flask(__name__)
+
     @app.get("/")
-    def index(): return render_template("index.html", report=data)
+    def index() -> str:
+        return render_template("index.html", report=data)
+
     @app.get("/api/findings")
-    def findings(): return jsonify(data)
+    def findings() -> Any:
+        return jsonify(data)
+
     @app.get("/download/json")
-    def json_download(): return send_from_directory(report_dir,"report.json",as_attachment=True)
+    def json_download() -> Any:
+        return send_from_directory(resolved_dir, "report.json", as_attachment=True)
+
     @app.get("/download/html")
-    def html_download(): return send_from_directory(report_dir,"report.html",as_attachment=True)
+    def html_download() -> Any:
+        return send_from_directory(resolved_dir, "report.html", as_attachment=True)
+
     return app
-def serve(report_dir, port): create_app(report_dir).run(host="127.0.0.1",port=port,debug=False,use_reloader=False)
+
+
+def serve(report_dir: Union[Path, str], port: int = 8765, host: str = "127.0.0.1") -> None:
+    """Serve the dashboard web server bound strictly to the given host (default: 127.0.0.1)."""
+    app = create_app(report_dir)
+    app.run(host=host, port=port, debug=False, use_reloader=False)
