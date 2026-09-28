@@ -1,1 +1,272 @@
-<!doctype html><html><head><meta charset="utf-8"><title>pysentra report</title><style>body{font:15px system-ui;max-width:1100px;margin:auto;padding:2rem;color:#172033}article{border:1px solid #ccd3df;padding:1rem;margin:1rem 0;border-radius:8px}pre{white-space:pre-wrap;background:#f4f6f9;padding:.8rem}h1{color:#342d73}@media print{article{break-inside:avoid}}</style></head><body><h1>pysentra security report</h1><p><b>Target:</b> {{target}}<br><b>Timestamp:</b> {{timestamp}}<br><b>Weighted risk:</b> {{weighted_risk_score}}</p><h2>Summary</h2><p>{{counts}}</p>{% for f in findings %}<article><h2>{{f.severity}} — {{f.title}}</h2><p><b>Scope:</b> {{f.scope_area}} · <b>CVSS:</b> {{f.cvss_score}} ({{f.cvss_vector}})</p><p>{{f.description}}</p><p><b>Component:</b> {{f.affected_component}}</p><p><b>Impact:</b> {{f.business_impact}}</p><p><b>Remediation:</b> {{f.remediation}}</p><h3>PoC request</h3><pre>{{f.poc_request}}</pre><h3>Response evidence</h3><pre>{{f.poc_response_snippet}}</pre></article>{% endfor %}<h2>Testing Methodology / Audit Log</h2><pre>{{audit_log}}</pre></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PySentra Security Report — {{ target }}</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #e2e8f0;
+      --card-bg: #f8fafc;
+      --primary: #0284c7;
+      --sev-critical: #dc2626;
+      --sev-high: #ea580c;
+      --sev-medium: #d97706;
+      --sev-low: #059669;
+      --sev-info: #0284c7;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      color: var(--text);
+      line-height: 1.5;
+      background: var(--bg);
+    }
+    header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0369a1;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.5px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .meta-item b {
+      color: var(--text-muted);
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .summary-section {
+      margin-bottom: 32px;
+    }
+    .summary-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+      min-width: 100px;
+    }
+    .summary-card b {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: block;
+    }
+    .summary-card .val {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin: 32px 0 16px 0;
+    }
+    article {
+      border: 1px solid var(--border);
+      border-left: 5px solid #94a3b8;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    article.Critical { border-left-color: var(--sev-critical); }
+    article.High { border-left-color: var(--sev-high); }
+    article.Medium { border-left-color: var(--sev-medium); }
+    article.Low { border-left-color: var(--sev-low); }
+    article.Info { border-left-color: var(--sev-info); }
+    
+    .finding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .finding-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .cvss-tag {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      margin-right: 6px;
+    }
+    .badge.Critical { background: #fee2e2; color: var(--sev-critical); }
+    .badge.High { background: #ffedd5; color: var(--sev-high); }
+    .badge.Medium { background: #fef3c7; color: var(--sev-medium); }
+    .badge.Low { background: #d1fae5; color: var(--sev-low); }
+    .badge.Info { background: #e0f2fe; color: var(--sev-info); }
+
+    .desc {
+      margin: 10px 0;
+      color: var(--text);
+    }
+    .field-row {
+      margin: 6px 0;
+      font-size: 13px;
+    }
+    .field-row b {
+      color: var(--text-muted);
+      display: inline-block;
+      width: 110px;
+    }
+    .remediation-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .remediation-box b {
+      color: #166534;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 12px;
+      margin-top: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .poc-section {
+      margin-top: 14px;
+    }
+    .poc-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+    @media print {
+      body { max-width: 100%; padding: 0; }
+      article { break-inside: avoid; box-shadow: none; }
+      pre { max-height: none; background: #f1f5f9; color: #0f172a; border: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 class="brand-title">PySentra Security Assessment Report</h1>
+    <div class="meta-grid">
+      <div class="meta-item"><b>Target</b> {{ target }}</div>
+      <div class="meta-item"><b>Assessment Timestamp</b> {{ timestamp }}</div>
+      <div class="meta-item"><b>Weighted Risk Score</b> {{ weighted_risk_score }} / 10.0</div>
+    </div>
+  </header>
+
+  <section class="summary-section">
+    <h2>Executive Vulnerability Summary</h2>
+    <div class="summary-grid">
+      {% for sev, count in counts.items() %}
+      <div class="summary-card">
+        <b>{{ sev }}</b>
+        <div class="val">{{ count }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2>Detailed Findings ({{ findings|length }})</h2>
+    {% for f in findings %}
+    <article class="{{ f.severity }}">
+      <div class="finding-header">
+        <h3 class="finding-title">
+          <span class="badge {{ f.severity }}">{{ f.severity }}</span>
+          {{ f.title }}
+        </h3>
+        <span class="cvss-tag">CVSS {{ "%.1f"|format(f.cvss_score) }}</span>
+      </div>
+
+      <div class="field-row"><b>Scope Area:</b> {{ f.scope_area }}</div>
+      <div class="field-row"><b>Component:</b> <code>{{ f.affected_component }}</code></div>
+      <div class="field-row"><b>CVSS Vector:</b> <code>{{ f.cvss_vector }}</code></div>
+
+      <p class="desc">{{ f.description }}</p>
+
+      {% if f.business_impact %}
+      <div class="field-row"><b>Impact:</b> {{ f.business_impact }}</div>
+      {% endif %}
+
+      <div class="remediation-box">
+        <b>Remediation:</b> {{ f.remediation }}
+      </div>
+
+      {% if f.poc_request %}
+      <div class="poc-section">
+        <div class="poc-title">Proof of Concept Request</div>
+        <pre>{{ f.poc_request }}</pre>
+      </div>
+      {% endif %}
+
+      {% if f.poc_response_snippet %}
+      <div class="poc-section">
+        <div class="poc-title">Server Response Evidence</div>
+        <pre>{{ f.poc_response_snippet }}</pre>
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+
+  {% if audit_log %}
+  <section>
+    <h2>Audit & Telemetry Log</h2>
+    <pre style="max-height:300px;">{{ audit_log }}</pre>
+  </section>
+  {% endif %}
+</body>
+</html>
