@@ -204,6 +204,14 @@ INJECTION_PATTERNS = [
         "Sanitize HTML content using DOMPurify before rendering, or prefer safe React text rendering.",
     ),
     (
+        "Potential DOM-based XSS (innerHTML / outerHTML)",
+        re.compile(r"\.(?:innerHTML|outerHTML)\s*=|document\.write\s*\("),
+        {".js", ".ts", ".jsx", ".tsx", ".html"},
+        "Medium",
+        "Direct assignment to innerHTML/outerHTML or document.write detected. Untrusted input can lead to DOM XSS.",
+        "Use textContent, createElement, or sanitize untrusted HTML with DOMPurify before DOM insertion.",
+    ),
+    (
         "Potential Insecure Deserialization (PHP unserialize)",
         re.compile(r"\bunserialize\s*\("),
         {".php"},
