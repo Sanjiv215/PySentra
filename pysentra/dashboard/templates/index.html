@@ -83,8 +83,12 @@
               <span class="detail-val score-highlight">{{ report.weighted_risk_score }} / 10.0</span>
             </div>
             <div class="detail-row">
+              <span class="detail-label">Assessment Mode</span>
+              <span class="detail-val">{{ report.scan_mode or 'Automated Security Assessment' }}</span>
+            </div>
+            <div class="detail-row">
               <span class="detail-label">Active Engine Modules</span>
-              <span class="detail-val">auth, authz, input, api, client, tls, storage</span>
+              <span class="detail-val mono">{% if report.active_modules %}{{ report.active_modules | join(', ') }}{% else %}auth, authz, input, api, client, tls, storage{% endif %}</span>
             </div>
           </div>
         </div>
