@@ -1,5 +1,6 @@
 """Universal language-agnostic static code and dependency scanner."""
 
+import fnmatch
 import json
 import re
 from pathlib import Path
@@ -298,8 +299,16 @@ def should_skip_path(path: Path, root_dir: Path, custom_ignored: Set[str]) -> bo
     dir_parts = parts[:-1] if path.is_file() else parts
     if any(p in DEFAULT_IGNORE_DIRS for p in dir_parts):
         return True
-    if any(p in custom_ignored for p in parts):
-        return True
+    if custom_ignored:
+        rel_str = path.relative_to(root_dir).as_posix()
+        for pat in custom_ignored:
+            if (
+                fnmatch.fnmatch(path.name, pat)
+                or fnmatch.fnmatch(rel_str, pat)
+                or fnmatch.fnmatch(rel_str, f"{pat}/*")
+                or any(fnmatch.fnmatch(p, pat) for p in parts)
+            ):
+                return True
     return False
 
 
