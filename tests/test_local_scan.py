@@ -125,3 +125,23 @@ def test_subprocess_local_scan_integration(tmp_path: Path) -> None:
     finally:
         proc.terminate()
         proc.wait(timeout=5)
+
+
+def test_local_scan_detects_dom_xss(tmp_path: Path) -> None:
+    js_file = tmp_path / "renderer.js"
+    js_file.write_text("document.getElementById('content').innerHTML = location.hash;\n")
+    findings = run_local_scan(str(tmp_path))
+    assert any("Potential DOM-based XSS" in f.title for f in findings)
+
+
+def test_parse_manifests_supports_flexible_version_specifiers(tmp_path: Path) -> None:
+    from pysentra.scanner.code_checks import parse_manifests
+
+    req = tmp_path / "requirements.txt"
+    req.write_text("flask>=3.0.0\nrequests~=2.31.0\nurllib3==1.26.4\n")
+    deps, found = parse_manifests(tmp_path)
+    assert found is True
+    dep_dict = {name: ver for name, ver, eco, _ in deps}
+    assert dep_dict["flask"] == "3.0.0"
+    assert dep_dict["requests"] == "2.31.0"
+    assert dep_dict["urllib3"] == "1.26.4"

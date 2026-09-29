@@ -124,3 +124,5 @@ def test_full_scan_against_in_process_demo(monkeypatch: pytest.MonkeyPatch, tmp_
     assert (report_dir / "report.json").is_file()
     assert (report_dir / "report.html").is_file()
     assert report["audit_log"]
+    assert report["scan_mode"] == "Web Application Assessment"
+    assert report["active_modules"] == ["auth", "authz", "input", "api", "client", "tls", "storage"]
