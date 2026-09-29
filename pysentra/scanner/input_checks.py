@@ -11,19 +11,20 @@ from .common import ContextProtocol, finding, get
 def run(ctx: ContextProtocol) -> List[Finding]:
     """Execute input validation and data handling checks."""
     out: List[Finding] = []
-    marker = "PYSENTRA_XSS_MARKER"
-    r = get(ctx, "/search?q=" + quote(marker), "input")
+    probe = "pysentra<xss_probe>"
+    r = get(ctx, "/search?q=" + quote(probe), "input")
     r_text = getattr(r, "text", "")
-    if r.status_code == 200 and marker in r_text:
+    if r.status_code == 200 and probe in r_text:
         out.append(
             finding(
                 "Input Validation & Data Handling",
                 "Reflected input is not output-encoded",
-                "A harmless unique marker was reflected in the search response.",
+                "Unencoded HTML probe was reflected in the search response, "
+                "indicating missing contextual output encoding.",
                 "/search",
                 "Medium",
-                "GET /search?q=" + marker + " HTTP/1.1",
-                r_text,
+                "GET /search?q=" + probe + " HTTP/1.1",
+                r_text[:500],
                 "Contextually encode output and validate input; adopt a restrictive CSP.",
             )
         )
