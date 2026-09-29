@@ -475,12 +475,11 @@ def parse_manifests(root_dir: Path) -> Tuple[List[Tuple[str, str, str, str]], bo
         manifest_found = True
         try:
             for line in req_file.read_text(encoding="utf-8", errors="ignore").splitlines():
-                line = line.strip().split("#")[0].strip()
-                if "==" in line:
-                    parts = line.split("==")
-                    if len(parts) == 2:
-                        rel_p = str(req_file.relative_to(root_dir))
-                        dependencies.append((parts[0].strip(), parts[1].strip(), "PyPI", rel_p))
+                line = line.strip().split("#")[0].split(";")[0].strip()
+                match = re.match(r"^([a-zA-Z0-9_\-\.]+)\s*(?:==|>=|<=|~=|===|>|<)\s*([0-9\.]+)", line)
+                if match:
+                    rel_p = str(req_file.relative_to(root_dir))
+                    dependencies.append((match.group(1).strip(), match.group(2).strip(), "PyPI", rel_p))
         except Exception:
             pass
 
