@@ -1,9 +1,10 @@
-"""Regression test: verify scanner produces differential, target-specific findings."""
-
+from pathlib import Path
+from typing import Any, Tuple
 from urllib.parse import urlsplit
 
+import pytest
 import requests
-from flask import Flask, jsonify, make_response, request
+from flask import Flask, Response, jsonify, make_response, request
 from requests.structures import CaseInsensitiveDict
 
 from pysentra.scanner.runner import run_scan
@@ -13,7 +14,7 @@ def create_hardened_app() -> Flask:
     app = Flask("hardened_app")
 
     @app.get("/")
-    def home():
+    def home() -> Response:
         resp = make_response("<h1>Hardened App</h1>")
         resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         resp.headers["Content-Security-Policy"] = "default-src 'self'"
@@ -22,7 +23,7 @@ def create_hardened_app() -> Flask:
         return resp
 
     @app.get("/login")
-    def login():
+    def login() -> str:
         return (
             '<form method="post">'
             '<input type="hidden" name="csrf_token" value="abc">'
@@ -31,26 +32,26 @@ def create_hardened_app() -> Flask:
         )
 
     @app.get("/api/v1/users")
-    def users():
+    def users() -> Response:
         resp = jsonify([{"id": 1, "username": "user1"}])
         resp.headers["X-RateLimit-Limit"] = "100"
         resp.headers["X-RateLimit-Remaining"] = "99"
         return resp
 
     @app.get("/.env")
-    def env():
+    def env() -> Tuple[str, int]:
         return ("Not Found", 404)
 
     @app.get("/admin")
-    def admin():
+    def admin() -> Tuple[str, int]:
         return ("Unauthorized", 401)
 
     @app.get("/search")
-    def search():
+    def search() -> str:
         return "Clean search results"
 
     @app.get("/error")
-    def err():
+    def err() -> Tuple[str, int]:
         return ("Internal Error", 500)
 
     return app
@@ -60,13 +61,13 @@ def create_vulnerable_app() -> Flask:
     app = Flask("vulnerable_app")
 
     @app.get("/")
-    def home():
+    def home() -> Response:
         resp = make_response("<h1>Vulnerable App</h1><script src='/static/app.js'></script>")
         resp.headers.add("Set-Cookie", "session=weak123; Path=/")
         return resp
 
     @app.get("/login")
-    def login():
+    def login() -> str:
         return (
             '<form method="post">'
             '<input name="username">'
@@ -76,7 +77,7 @@ def create_vulnerable_app() -> Flask:
         )
 
     @app.get("/api/v1/users")
-    def users():
+    def users() -> Response:
         resp = jsonify([{"id": 1, "email": "admin@vuln.local", "password_hash": "sha256$insecure"}])
         origin = request.headers.get("Origin")
         if origin:
@@ -85,31 +86,32 @@ def create_vulnerable_app() -> Flask:
         return resp
 
     @app.get("/.env")
-    def env():
+    def env() -> str:
         return "DATABASE_URL=postgres://admin:secret123@db.local/prod\nSECRET_KEY=supersecret\n"
 
     @app.get("/admin")
-    def admin():
+    def admin() -> str:
         return "<h1>Admin Panel</h1><p>Unrestricted administrative control</p>"
 
     @app.get("/search")
-    def search():
+    def search() -> str:
         return "<h1>Search</h1><p>Results for " + request.args.get("q", "") + "</p>"
 
     @app.get("/error")
-    def err():
+    def err() -> Tuple[str, int]:
         return ("Traceback (most recent call last):\n  File \"app.py\", line 42 in run\nException: boom", 500)
 
     return app
 
 
-def test_differential_scan_reflects_actual_target_differences(monkeypatch, tmp_path):
+def test_differential_scan_reflects_actual_target_differences(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     hardened_app = create_hardened_app()
     vulnerable_app = create_vulnerable_app()
 
-    def mock_request(session, method, url, **kwargs):
+    def mock_request(session: Any, method: str, url: str, **kwargs: Any) -> requests.Response:
         parsed = urlsplit(url)
         path = (parsed.path or "/") + (("?" + parsed.query) if parsed.query else "")
+        flask_resp: Any
         if "hardened.local" in parsed.netloc:
             flask_resp = hardened_app.test_client().open(path, method=method, headers=kwargs.get("headers"))
         elif "vulnerable.local" in parsed.netloc:
@@ -179,7 +181,7 @@ def test_differential_scan_reflects_actual_target_differences(monkeypatch, tmp_p
     assert "DATABASE_URL" in env_finding.poc_response_snippet
 
 
-def test_finding_enforces_raw_evidence_and_rejects_phantom_titles():
+def test_finding_enforces_raw_evidence_and_rejects_phantom_titles() -> None:
     import pytest
 
     from pysentra.report.models import Finding

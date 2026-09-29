@@ -2,11 +2,15 @@
 
 import importlib.util
 from pathlib import Path
+from typing import Any, Iterable, Set
 from urllib.parse import urlsplit
 
+import pytest
 import requests
+from flask import Flask
 from requests.structures import CaseInsensitiveDict
 
+from pysentra.report.models import Finding
 from pysentra.scanner import (
     api_checks,
     auth_checks,
@@ -20,17 +24,17 @@ from pysentra.scanner import (
 from pysentra.scanner.runner import run_scan
 
 
-def demo_app():
+def demo_app() -> Flask:
     path = Path(__file__).parents[1] / "demo-vulnerable-app" / "app.py"
     spec = importlib.util.spec_from_file_location("pysentra_demo_for_tests", path)
     if spec is None or spec.loader is None:
         raise RuntimeError("Failed to load demo-vulnerable-app module")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.app
+    return module.app  # type: ignore[no-any-return]
 
 
-def response_from_flask(response):
+def response_from_flask(response: Any) -> requests.Response:
     result = requests.Response()
     result.status_code = response.status_code
     result._content = response.data
@@ -45,53 +49,53 @@ class DemoContext:
     auth_token = None
     second_auth_token = None
 
-    def request(self, method, url, module, **kwargs):
+    def request(self, method: str, url: str, module: str, **kwargs: Any) -> requests.Response:
         parsed = urlsplit(url)
         path = parsed.path + (("?" + parsed.query) if parsed.query else "")
         response = demo_app().test_client().open(path, method=method, headers=kwargs.get("headers"))
         return response_from_flask(response)
 
 
-def titles(findings):
+def titles(findings: Iterable[Finding]) -> Set[str]:
     return {finding.title for finding in findings}
 
 
-def test_auth_checks_detect_weak_cookie_and_csrf():
+def test_auth_checks_detect_weak_cookie_and_csrf() -> None:
     assert "Session cookie missing security attributes" in titles(auth_checks.run(DemoContext()))
 
 
-def test_authz_checks_detect_forced_browsing():
+def test_authz_checks_detect_forced_browsing() -> None:
     assert "Unauthenticated admin path accessible" in titles(authz_checks.run(DemoContext()))
 
 
-def test_input_checks_detect_reflection():
+def test_input_checks_detect_reflection() -> None:
     assert "Reflected input is not output-encoded" in titles(input_checks.run(DemoContext()))
 
 
-def test_api_checks_detect_sensitive_fields():
+def test_api_checks_detect_sensitive_fields() -> None:
     assert "API exposes sensitive user fields" in titles(api_checks.run(DemoContext()))
 
 
-def test_client_checks_detect_missing_csp():
+def test_client_checks_detect_missing_csp() -> None:
     assert "Content Security Policy missing" in titles(client_side_checks.run(DemoContext()))
 
 
-def test_tls_checks_detect_http():
+def test_tls_checks_detect_http() -> None:
     assert "Target uses unencrypted HTTP" in titles(tls_checks.run(DemoContext()))
 
 
-def test_storage_checks_detect_env_file():
+def test_storage_checks_detect_env_file() -> None:
     assert "Environment file exposed over HTTP" in titles(storage_privacy_checks.run(DemoContext()))
 
 
-def test_cors_checks_detect_origin_reflection():
+def test_cors_checks_detect_origin_reflection() -> None:
     assert "Credentialed CORS origin reflection" in titles(cors_checks.run(DemoContext()))
 
 
-def test_full_scan_against_in_process_demo(monkeypatch, tmp_path):
+def test_full_scan_against_in_process_demo(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     app = demo_app()
 
-    def local_request(_session, method, url, **kwargs):
+    def local_request(_session: Any, method: str, url: str, **kwargs: Any) -> requests.Response:
         parsed = urlsplit(url)
         path = parsed.path + (("?" + parsed.query) if parsed.query else "")
         response = app.test_client().open(path, method=method, headers=kwargs.get("headers"))

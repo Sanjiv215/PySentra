@@ -5,12 +5,13 @@ import subprocess
 import sys
 import time
 import urllib.request
+from pathlib import Path
 
 from pysentra.dashboard.server import create_app
 from pysentra.scanner.code_checks import run_local_scan
 
 
-def test_local_scan_detects_secrets_and_injections(tmp_path):
+def test_local_scan_detects_secrets_and_injections(tmp_path: Path) -> None:
     # Construct synthetic mock secrets at runtime to avoid push protection triggers
     mock_aws = "AKIA" + "0000000000000000"
     mock_db = "postgres://" + "user:pass@localhost:5432/testdb"
@@ -40,7 +41,7 @@ def test_local_scan_detects_secrets_and_injections(tmp_path):
     assert any("Potential Dynamic Code Execution (eval)" in t for t in titles)
 
 
-def test_dashboard_zero_login_no_redirect(tmp_path):
+def test_dashboard_zero_login_no_redirect(tmp_path: Path) -> None:
     report_data = {
         "target": str(tmp_path),
         "timestamp": "2026-09-11T12:00:00Z",
@@ -78,10 +79,11 @@ def test_dashboard_zero_login_no_redirect(tmp_path):
     # API route must return 200 with findings JSON directly
     api_res = client.get("/api/findings")
     assert api_res.status_code == 200
+    assert api_res.json is not None
     assert api_res.json["counts"]["Critical"] == 1
 
 
-def test_subprocess_local_scan_integration(tmp_path):
+def test_subprocess_local_scan_integration(tmp_path: Path) -> None:
     mock_stripe = "sk_" + "live_" + "0" * 24
     # Setup a sample repository
     project_dir = tmp_path / "sample_project"
