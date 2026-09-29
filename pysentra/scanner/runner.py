@@ -103,6 +103,8 @@ def run_scan(
     findings: List[Finding] = []
 
     if is_url(target):
+        scan_mode = "Web Application Assessment"
+        active_modules = list(selected)
         ctx = ScanContext(target, rate_limit, test_app, auth_token, second_auth_token)
         for name in selected:
             if name in MODULES:
@@ -113,6 +115,8 @@ def run_scan(
         audit_entries = ctx.audit.entries
     else:
         # Universal local code scan mode
+        scan_mode = "Static Code & Dependency Assessment"
+        active_modules = ["secrets", "insecure_config", "static_injection", "dependency_osv"]
         findings = code_checks.run_local_scan(target, progress=progress)
         audit_entries = [{
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -123,5 +127,12 @@ def run_scan(
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     report_dir = Path.cwd() / "pysentra-reports" / timestamp
-    data = write_report(report_dir, target, findings, audit_entries)
+    data = write_report(
+        report_dir,
+        target,
+        findings,
+        audit_entries,
+        scan_mode=scan_mode,
+        active_modules=active_modules,
+    )
     return findings, report_dir, data

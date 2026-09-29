@@ -202,8 +202,12 @@
     <h1 class="brand-title">PySentra Security Assessment Report</h1>
     <div class="meta-grid">
       <div class="meta-item"><b>Target</b> {{ target }}</div>
+      <div class="meta-item"><b>Assessment Mode</b> {{ scan_mode or 'Automated Security Assessment' }}</div>
       <div class="meta-item"><b>Assessment Timestamp</b> {{ timestamp }}</div>
       <div class="meta-item"><b>Weighted Risk Score</b> {{ weighted_risk_score }} / 10.0</div>
+      {% if active_modules %}
+      <div class="meta-item"><b>Active Engine Modules</b> {{ active_modules | join(', ') }}</div>
+      {% endif %}
     </div>
   </header>
 
