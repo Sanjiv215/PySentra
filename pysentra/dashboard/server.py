@@ -6,7 +6,7 @@ import socket
 from pathlib import Path
 from typing import Any, Dict, Union
 
-from flask import Flask, jsonify, render_template, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 try:
     _templates_dir = str(pkg_resources.files("pysentra.dashboard").joinpath("templates"))
@@ -44,7 +44,8 @@ def create_app(report_dir: Union[Path, str]) -> Flask:
 
     @app.get("/download/html")
     def html_download() -> Any:
-        return send_from_directory(resolved_dir, "report.html", as_attachment=True)
+        as_attachment = request.args.get("download", "").lower() in ("1", "true", "yes")
+        return send_from_directory(resolved_dir, "report.html", as_attachment=as_attachment)
 
     return app
 
