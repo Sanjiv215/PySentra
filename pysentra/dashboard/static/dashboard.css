@@ -486,6 +486,7 @@ body {
 .chip-low.active { background: var(--sev-low); border-color: var(--sev-low); color: #FFFFFF; }
 .chip-info.active { background: var(--sev-info); border-color: var(--sev-info); color: #090D16; }
 
+.scope-wrapper,
 .sort-wrapper {
   display: flex;
   align-items: center;
@@ -673,6 +674,26 @@ body {
 .copy-btn:hover {
   color: #FFFFFF;
   background: #334155;
+}
+
+.copy-text-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.15s ease;
+  vertical-align: middle;
+}
+
+.copy-text-btn:hover {
+  color: #FFFFFF;
+  background: #334155;
+  border-color: #475569;
 }
 
 pre.code-block {

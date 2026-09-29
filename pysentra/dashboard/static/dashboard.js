@@ -5,6 +5,7 @@
   let findingsData = [];
   let countsData = {};
   let activeSeverity = 'All';
+  let activeScope = 'All';
   let searchQuery = '';
   let activeSort = 'severity-desc';
 
@@ -168,6 +169,17 @@
       });
     });
 
+    // Scope selector
+    const scopeSelect = document.querySelector('#scope-select');
+    if (scopeSelect) {
+      const scopes = Array.from(new Set(findingsData.map(f => f.scope_area).filter(Boolean))).sort();
+      scopeSelect.innerHTML = '<option value="All">All Scopes</option>' + scopes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+      scopeSelect.addEventListener('change', e => {
+        activeScope = e.target.value;
+        renderFindings();
+      });
+    }
+
     // Sort selector
     const sortSelect = document.querySelector('#sort-select');
     if (sortSelect) {
@@ -190,7 +202,7 @@
       });
     }
 
-    // Delegated copy button handler
+    // Delegated copy button handlers
     document.addEventListener('click', e => {
       if (e.target && e.target.classList.contains('copy-btn')) {
         const targetId = e.target.dataset.target;
@@ -204,8 +216,36 @@
             }, 1800);
           });
         }
+      } else if (e.target && e.target.classList.contains('copy-text-btn')) {
+        const textToCopy = e.target.dataset.copy;
+        if (textToCopy) {
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalText = e.target.innerText;
+            e.target.innerText = 'Copied!';
+            setTimeout(() => {
+              e.target.innerText = originalText;
+            }, 1800);
+          });
+        }
+      } else if (e.target && e.target.id === 'reset-filters-btn') {
+        resetAllFilters();
       }
     });
+  }
+
+  function resetAllFilters() {
+    activeSeverity = 'All';
+    activeScope = 'All';
+    searchQuery = '';
+    const searchInput = document.querySelector('#search');
+    if (searchInput) searchInput.value = '';
+    const clearBtn = document.querySelector('#clear-search');
+    if (clearBtn) clearBtn.style.display = 'none';
+    const chips = document.querySelectorAll('.chip');
+    chips.forEach(c => c.classList.toggle('active', c.dataset.severity === 'All'));
+    const scopeSelect = document.querySelector('#scope-select');
+    if (scopeSelect) scopeSelect.value = 'All';
+    renderFindings();
   }
 
   function renderFindings() {
@@ -214,6 +254,9 @@
 
     let filtered = findingsData.filter(f => {
       if (activeSeverity !== 'All' && f.severity !== activeSeverity) {
+        return false;
+      }
+      if (activeScope !== 'All' && f.scope_area !== activeScope) {
         return false;
       }
       if (searchQuery) {
@@ -252,7 +295,12 @@
     });
 
     if (filtered.length === 0) {
-      root.innerHTML = '<div class="empty-state">No findings match your current filters.</div>';
+      root.innerHTML = `
+        <div class="empty-state">
+          <p>No findings match your current filters.</p>
+          <button id="reset-filters-btn" class="btn btn-secondary" style="margin-top:14px;">Reset Filters</button>
+        </div>
+      `;
       return;
     }
 
@@ -300,7 +348,9 @@
 
           <div class="meta-tags">
             <span class="meta-item"><b>Scope:</b> ${escapeHtml(f.scope_area)}</span>
-            <span class="meta-item"><b>Component:</b> <span class="mono">${escapeHtml(f.affected_component || 'Target Domain')}</span></span>
+            <span class="meta-item"><b>Component:</b> <span class="mono">${escapeHtml(f.affected_component || 'Target Domain')}</span>
+              ${f.affected_component ? `<button class="copy-text-btn" data-copy="${escapeHtml(f.affected_component)}" title="Copy component path">Copy</button>` : ''}
+            </span>
           </div>
 
           <p class="finding-desc">${escapeHtml(f.description)}</p>
