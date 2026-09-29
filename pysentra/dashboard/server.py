@@ -2,6 +2,7 @@
 
 import importlib.resources as pkg_resources
 import json
+import socket
 from pathlib import Path
 from typing import Any, Dict, Union
 
@@ -46,6 +47,21 @@ def create_app(report_dir: Union[Path, str]) -> Flask:
         return send_from_directory(resolved_dir, "report.html", as_attachment=True)
 
     return app
+
+
+def find_free_port(host: str, starting_port: int) -> int:
+    """Find the starting port if available, or the next available ephemeral port."""
+    for p in range(starting_port, starting_port + 50):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((host, p))
+                return p
+            except OSError:
+                continue
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((host, 0))
+        return s.getsockname()[1]
 
 
 def serve(report_dir: Union[Path, str], port: int = 8765, host: str = "127.0.0.1") -> None:

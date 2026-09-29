@@ -41,6 +41,8 @@ DEFAULT_IGNORE_DIRS = {
     "coverage",
     ".next",
     ".nuxt",
+    "tests",
+    "test",
 }
 
 BINARY_EXTENSIONS = {
@@ -306,6 +308,36 @@ def is_false_positive_secret(line: str) -> bool:
     return any(p in lower for p in placeholders)
 
 
+def get_python_ignored_lines(content: str) -> Set[int]:
+    """Identify line numbers inside docstrings or rule definition lists to prevent self-matching."""
+    import ast
+
+    ignored: Set[int] = set()
+    try:
+        tree = ast.parse(content)
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Expr)
+                and isinstance(node.value, ast.Constant)
+                and isinstance(node.value.value, str)
+            ):
+                end_line = getattr(node, "end_lineno", node.lineno)
+                for line_no in range(node.lineno, end_line + 1):
+                    ignored.add(line_no)
+            elif isinstance(node, ast.Assign):
+                is_rule_def = any(
+                    isinstance(tgt, ast.Name) and (tgt.id.endswith("_PATTERNS") or tgt.id.startswith("BANNED_"))
+                    for tgt in node.targets
+                )
+                if is_rule_def:
+                    end_line = getattr(node, "end_lineno", node.lineno)
+                    for line_no in range(node.lineno, end_line + 1):
+                        ignored.add(line_no)
+    except Exception:
+        pass
+    return ignored
+
+
 def check_file_contents(file_path: Path, rel_str: str) -> List[Finding]:
     """Perform single-pass inspection on a source code file."""
     findings: List[Finding] = []
@@ -317,8 +349,11 @@ def check_file_contents(file_path: Path, rel_str: str) -> List[Finding]:
         return findings
 
     lines = content.splitlines()
+    py_ignored_lines = get_python_ignored_lines(content) if suffix == ".py" else set()
 
     for line_idx, line in enumerate(lines, start=1):
+        if line_idx in py_ignored_lines:
+            continue
         line_strip = line.strip()
         if not line_strip or line_strip.startswith(("//", "#", "/*", "*", "<!--")):
             continue

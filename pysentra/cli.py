@@ -10,7 +10,7 @@ from typing import List, Optional
 from rich.console import Console
 from rich.progress import Progress
 
-from pysentra.dashboard.server import serve
+from pysentra.dashboard.server import find_free_port, serve
 from pysentra.scanner.runner import is_url, run_scan
 
 try:
@@ -192,17 +192,21 @@ def main(argv: Optional[List[str]] = None) -> None:
 
     console.print(f"[bold green]Completed:[/] {len(findings)} findings. Reports: {directory}")
 
+    actual_port = find_free_port(args.bind, args.port)
+    if actual_port != args.port:
+        console.print(f"[yellow]Note:[/] Port {args.port} was in use; automatically selected port {actual_port}.")
+
     host_for_url = "127.0.0.1" if args.bind in ("0.0.0.0", "::") else args.bind
-    dashboard_url = f"http://{host_for_url}:{args.port}"
+    dashboard_url = f"http://{host_for_url}:{actual_port}"
     console.print(
-        f"Dashboard: [link={dashboard_url}]{dashboard_url}[/link] (bound to {args.bind}:{args.port}, Ctrl-C to stop)"
+        f"Dashboard: [link={dashboard_url}]{dashboard_url}[/link] (bound to {args.bind}:{actual_port}, Ctrl-C to stop)"
     )
 
     if not args.no_open:
         webbrowser.open(dashboard_url)
 
     try:
-        serve(directory, port=args.port, host=args.bind)
+        serve(directory, port=actual_port, host=args.bind)
     except KeyboardInterrupt:
         console.print("\nDashboard stopped.")
 
