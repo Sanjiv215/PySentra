@@ -145,3 +145,34 @@ def test_parse_manifests_supports_flexible_version_specifiers(tmp_path: Path) ->
     assert dep_dict["flask"] == "3.0.0"
     assert dep_dict["requests"] == "2.31.0"
     assert dep_dict["urllib3"] == "1.26.4"
+
+
+def test_should_skip_path_with_gitignore_wildcards(tmp_path: Path) -> None:
+    from pysentra.scanner.code_checks import should_skip_path
+
+    gitignore_rules = {"*.pem", "build/*", "keys/*.key", "*.log"}
+    root = tmp_path
+    assert should_skip_path(root / "server.pem", root, gitignore_rules) is True
+    assert should_skip_path(root / "build" / "bundle.js", root, gitignore_rules) is True
+    assert should_skip_path(root / "keys" / "private.key", root, gitignore_rules) is True
+    assert should_skip_path(root / "app.log", root, gitignore_rules) is True
+    assert should_skip_path(root / "src" / "index.js", root, gitignore_rules) is False
+
+
+def test_dashboard_html_report_serves_inline(tmp_path: Path) -> None:
+    (tmp_path / "report.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "report.html").write_text("<h1>Report</h1>", encoding="utf-8")
+
+    app = create_app(tmp_path)
+    client = app.test_client()
+
+    # Default /download/html must be served inline for in-browser rendering
+    res = client.get("/download/html")
+    assert res.status_code == 200
+    assert "attachment" not in res.headers.get("Content-Disposition", "")
+    assert b"<h1>Report</h1>" in res.data
+
+    # /download/html?download=1 should trigger attachment
+    res_dl = client.get("/download/html?download=1")
+    assert res_dl.status_code == 200
+    assert "attachment" in res_dl.headers.get("Content-Disposition", "")
