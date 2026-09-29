@@ -231,6 +231,29 @@
         resetAllFilters();
       }
     });
+
+    // Keyboard shortcuts: '/' to focus search, 'Escape' to clear
+    document.addEventListener('keydown', e => {
+      const activeTag = document.activeElement ? document.activeElement.tagName : '';
+      if (e.key === '/' && activeTag !== 'INPUT' && activeTag !== 'TEXTAREA') {
+        e.preventDefault();
+        const searchInput = document.querySelector('#search');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      } else if (e.key === 'Escape') {
+        const searchInput = document.querySelector('#search');
+        if (searchInput && document.activeElement === searchInput) {
+          searchInput.value = '';
+          searchQuery = '';
+          const clearBtn = document.querySelector('#clear-search');
+          if (clearBtn) clearBtn.style.display = 'none';
+          searchInput.blur();
+          renderFindings();
+        }
+      }
+    });
   }
 
   function resetAllFilters() {
@@ -294,6 +317,12 @@
       return 0;
     });
 
+    // Update findings count indicator
+    const countEl = document.querySelector('#findings-count');
+    if (countEl) {
+      countEl.textContent = `Showing ${filtered.length} of ${findingsData.length}`;
+    }
+
     if (filtered.length === 0) {
       root.innerHTML = `
         <div class="empty-state">
@@ -356,7 +385,11 @@
           <p class="finding-desc">${escapeHtml(f.description)}</p>
 
           <div class="remediation-box">
-            <b>Remediation:</b> ${escapeHtml(f.remediation)}
+            <div class="remediation-header">
+              <b>Remediation Guidance</b>
+              <button class="copy-text-btn" data-copy="${escapeHtml(f.remediation)}" title="Copy remediation fix">Copy Fix</button>
+            </div>
+            <p class="remediation-text">${escapeHtml(f.remediation)}</p>
           </div>
 
           <details class="poc-details">

@@ -98,7 +98,7 @@
       <section class="toolbar-panel">
         <div class="search-wrapper">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="search" placeholder="Search findings, CVEs, endpoints, components..." aria-label="Search findings">
+          <input type="text" id="search" placeholder="Search findings, CVEs, components... (Press '/' to focus)" aria-label="Search findings">
           <button id="clear-search" class="clear-btn" style="display:none;" title="Clear search">&times;</button>
         </div>
 
@@ -130,7 +130,10 @@
             </select>
           </div>
 
-          <button id="expand-all-btn" class="btn btn-ghost">Expand All</button>
+          <div class="toolbar-actions">
+            <span class="findings-count-pill" id="findings-count"></span>
+            <button id="expand-all-btn" class="btn btn-ghost">Expand All</button>
+          </div>
         </div>
       </section>
 
