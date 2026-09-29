@@ -61,7 +61,7 @@ def find_free_port(host: str, starting_port: int) -> int:
                 continue
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((host, 0))
-        return s.getsockname()[1]
+        return int(s.getsockname()[1])
 
 
 def serve(report_dir: Union[Path, str], port: int = 8765, host: str = "127.0.0.1") -> None:
